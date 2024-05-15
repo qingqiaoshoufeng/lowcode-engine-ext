@@ -5,18 +5,25 @@ import { event, project } from '@alilc/lowcode-engine';
 import MonacoEditor from '@alilc/lowcode-plugin-base-monaco-editor';
 import './index.less';
 
+// const HelpText = `你可以通过点击左侧区域绑定变量或处理函数，当然你也可以在上方输入复杂的表达式。
+// 输入框内默认支持变量，写法和 JS 写法完全一致。<br>
+// this: '容器上下文对象'<br>
+// state: '容器的state'<br>
+// props: '容器的props'<br>
+// context: '容器的context'<br>
+// schema: '页面上下文对象'<br>
+// component: '组件上下文对象'<br>
+// constants: '应用常量对象'<br>
+// utils: '应用工具对象'<br>
+// dataSourceMap: '容器数据源Map'<br>
+// field: '表单Field对象'
+// `;
+
 const HelpText = `你可以通过点击左侧区域绑定变量或处理函数，当然你也可以在上方输入复杂的表达式。
-输入框内默认支持变量，写法和 JS 写法完全一致。<br>
-this: '容器上下文对象'<br>
-state: '容器的state'<br>
-props: '容器的props'<br>
-context: '容器的context'<br>
-schema: '页面上下文对象'<br>
-component: '组件上下文对象'<br>
-constants: '应用常量对象'<br>
-utils: '应用工具对象'<br>
-dataSourceMap: '容器数据源Map'<br>
-field: '表单Field对象'
+输入框内默认支持变量，写法和 JS 写法完全一致。<br><br>
+<strong style="color: #1890ff">this</strong>: '容器上下文对象，可通过this.xxx 获取到 props 和 data 的值'<br>
+<strong style="color: #1890ff">this.utils</strong>: '通过appHelper设置的工具函数'<br>
+<strong style="color: #1890ff">this.constants</strong>: '通过appHelper设置的常量'<br>
 `;
 
 const defaultEditorProps = {
@@ -86,7 +93,7 @@ export default class VariableBindDialog extends Component<PluginProps> {
       });
     });
 
-    
+
 
   }
 
@@ -144,34 +151,48 @@ export default class VariableBindDialog extends Component<PluginProps> {
    * @param  {String}
    * @return {Array}
    */
+  // getVarableList(): any[] {
+  //   const schema = this.exportSchema();
+
+  //   const stateMap = schema.componentsTree[0]?.state;
+  //   const dataSourceMap = {};
+  //   const dataSource = [];
+
+  //   for (const key in stateMap) {
+  //     if (Object.prototype.hasOwnProperty.call(stateMap, key) && key) {
+  //       dataSource.push(`this.${key}`);
+  //       const valueString = stateMap[key].value;
+  //       let value;
+  //       try {
+  //         value = eval(`(${valueString})`);
+  //       } catch (e) {}
+
+  //       // 属性为false 或者 为"" 也显示到dialog中
+  //       if (value || value === false || value === '') {
+  //         dataSourceMap[key] = value;
+  //       }
+  //     }
+  //   }
+  //   const treeList = [];
+  //   this.walkNode(dataSourceMap, -1, treeList);
+  //   // this.setState({
+  //   //   treeList
+  //   // })
+  //   return treeList;
+  // }
   getVarableList(): any[] {
-    const schema = this.exportSchema();
+    const schema = project.exportSchema();
 
     const stateMap = schema.componentsTree[0]?.state;
-    const dataSourceMap = {};
     const dataSource = [];
 
     for (const key in stateMap) {
       if (Object.prototype.hasOwnProperty.call(stateMap, key) && key) {
-        dataSource.push(`this.state.${key}`);
-        const valueString = stateMap[key].value;
-        let value;
-        try {
-          value = eval(`(${valueString})`);
-        } catch (e) {}
-
-        // 属性为false 或者 为"" 也显示到dialog中
-        if (value || value === false || value === '') {
-          dataSourceMap[key] = value;
-        }
+        dataSource.push(`${key}`);
       }
     }
-    const treeList = [];
-    this.walkNode(dataSourceMap, -1, treeList);
-    // this.setState({
-    //   treeList
-    // })
-    return treeList;
+
+    return dataSource.map(i => ({label: i}));
   }
 
   /**
@@ -231,7 +252,7 @@ export default class VariableBindDialog extends Component<PluginProps> {
 
     for (const item of list) {
       if (item && item.id) {
-        // dataSource.push(`this.state.${item.id}`);
+        // dataSource.push(`this.${item.id}`);
         dataSource.push({
           label: `${item.id}`,
           key: item.id,
@@ -281,7 +302,7 @@ export default class VariableBindDialog extends Component<PluginProps> {
         this.setState({
           variableListMap: {
             stateVaroableList: {
-              name: 'State属性',
+              name: 'Data数据',
               childrens: stateVaroableList,
             },
             methods: {
@@ -289,7 +310,7 @@ export default class VariableBindDialog extends Component<PluginProps> {
               childrens: methods,
             },
             dataSource: {
-              name: '数据源',
+              name: '接口数据源',
               childrens: dataSource,
             },
             ...this.extraDataMap,
@@ -494,11 +515,11 @@ export default class VariableBindDialog extends Component<PluginProps> {
     let selectLabel;
     if (selParentVariable == 'stateVaroableList') {
       const pathList = this.treeFindPath(childrenVariableList, (data) => data.key == key, 'label');
-      selectLabel = `this.state.${pathList.join('.')}`;
+      selectLabel = `this.${pathList.join('.')}`;
     } else if (selParentVariable == 'methods') {
       selectLabel = `this.${label}()`;
     } else if (selParentVariable == 'dataSource') {
-      selectLabel = `this.state.${label}`;
+      selectLabel = `this.${label}`;
     } else {
       const fondKey = Object.keys(this.extraDataMap || {}).find((k) => k === selParentVariable);
       if (fondKey) {
@@ -531,7 +552,7 @@ export default class VariableBindDialog extends Component<PluginProps> {
     const {isOverFlowMaxSize,maxTextSize} = this.state;
     return (
       isOverFlowMaxSize ? <span className='error-message'>表达式文本不能超过{maxTextSize}个字符，请换成函数调用</span> :null
-      
+
     )
   }
 
@@ -645,7 +666,7 @@ export default class VariableBindDialog extends Component<PluginProps> {
             <div className="dialog-right-container">
               <div className="dialog-small-title">绑定 {this.renderErrorMessage()}</div>
               <div id="jsEditorDom" className={isOverFlowMaxSize?"editor-context editor-context-error":"editor-context"} ref={this.editorJsRef}>
-                <div className="editor-type-tag">=</div>
+                {/* <div className="editor-type-tag">=</div> */}
                 <MonacoEditor
                   value={jsCode}
                   {...defaultEditorProps}
